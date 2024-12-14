@@ -52,10 +52,10 @@ jobs:
 
       - name: Configure Kubernetes context
         run: |
-          kubectl config set-cluster your-cluster --server=https://<kubernetes-server-url>
-          kubectl config set-credentials your-username --token=${{ secrets.KUBE_TOKEN }}
-          kubectl config set-context your-context --cluster=your-cluster --user=your-username
-          kubectl config use-context your-context
+          kubectl config set-cluster yc-managed-k8s-catlbe79o7tovp5cd5k0 --server=https://130.193.45.63
+          kubectl config set-credentials yc-managed-k8s-catlbe79o7tovp5cd5k0 --token=${{ secrets.KUBE_TOKEN }}
+          kubectl config set-context yc-dipslab4 --cluster=yc-managed-k8s-catlbe79o7tovp5cd5k0 --user=yc-managed-k8s-catlbe79o7tovp5cd5k0
+          kubectl config use-context yc-dipslab4
 
       - name: Apply Kubernetes manifests
         run: |
