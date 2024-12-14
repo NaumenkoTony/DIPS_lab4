@@ -43,7 +43,8 @@ jobs:
 
       - name: Configure Kubernetes context
         run: |
-          kubectl config set-cluster yc-managed-k8s-catlbe79o7tovp5cd5k0 --server=https://130.193.45.63 --certificate-authority-data=${{ secrets.KUBE_CA_DATA }}
+          echo "${{ secrets.KUBE_CA_CERT }}" > ca.crt
+          kubectl config set-cluster yc-managed-k8s-catlbe79o7tovp5cd5k0 --server=https://130.193.45.63 --certificate-authority=ca.crt
           kubectl config set-credentials yc-managed-k8s-catlbe79o7tovp5cd5k0 --token=${{ secrets.KUBE_TOKEN }}
           kubectl config set-context yc-dipslab4 --cluster=yc-managed-k8s-catlbe79o7tovp5cd5k0 --user=yc-managed-k8s-catlbe79o7tovp5cd5k0
           kubectl config use-context yc-dipslab4
