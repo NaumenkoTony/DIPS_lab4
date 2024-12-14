@@ -4,7 +4,7 @@ on:
     branches: [ master ]
 jobs:
   build:
-    name: Autograding
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -13,26 +13,84 @@ jobs:
 
       - uses: docker/setup-buildx-action@v2
 
-      # TODO build, publish to docker hub, deploy to k8s
+      - name: Build images
+        timeout-minutes: 10
+        run: docker compose build
 
-      - name: Run API Tests
-        uses: matt-ball/newman-action@master
+  push:
+    name: Push Docker images
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
         with:
-          collection: <variant>/postman/collection.json
-          environment: <variant>/postman/environment.json
-          delayRequest: 100
-          reporters: '[ "cli" ]'
+          fetch-depth: 0
 
-      - uses: education/autograding@v1
-        id: autograder
-        continue-on-error: true
-
-      - name: Github auto grader mark
-        uses: Romanow/google-sheet-autograder-marker@v1.0
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          google_token: ${{secrets.GOOGLE_API_KEY}}
-          sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
-          homework_number: 4
-          user_column: 'D'
-          column_offset: 'F'
-          mark: "'+"
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push images
+        run: |
+          docker compose push
+  
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: push
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Configure Kubernetes context
+        run: |
+          kubectl config set-cluster your-cluster --server=https://<kubernetes-server-url>
+          kubectl config set-credentials your-username --token=${{ secrets.KUBE_TOKEN }}
+          kubectl config set-context your-context --cluster=your-cluster --user=your-username
+          kubectl config use-context your-context
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods
+          kubectl get services
+          
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Run API Tests
+      uses: matt-ball/newman-action@master
+      with:
+        collection: v2/postman/collection.json
+        environment: v2/postman/environment.json
+        delayRequest: 100
+        reporters: '[ "cli" ]'
+
+    - uses: education/autograding@v1
+      id: autograder
+      continue-on-error: true
+
+    - name: Github auto grader mark
+      uses: Romanow/google-sheet-autograder-marker@v1.0
+      with:
+        google_token: ${{secrets.GOOGLE_API_KEY}}
+        sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
+        homework_number: 4
+        user_column: 'D'
+        column_offset: 'F'
+        mark: "'+"
