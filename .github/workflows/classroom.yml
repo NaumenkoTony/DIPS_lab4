@@ -30,28 +30,26 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
-    needs: build
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v1
         with:
           version: 'latest'
 
-      - name: Set up Kubernetes context
+      - name: Configure Kubernetes context
         run: |
           echo "${{ secrets.KUBE_CA_CERT }}" > ca.crt
-          kubectl config set-cluster yc-managed-k8s-catlbe79o7tovp5cd5k0 --server=https://130.193.45.63 --certificate-authority=ca.crt
-          kubectl config set-credentials yc-managed-k8s-catlbe79o7tovp5cd5k0 --token=${{ secrets.KUBE_TOKEN }}
-          kubectl config set-context yc-dipslab4 --cluster=yc-managed-k8s-catlbe79o7tovp5cd5k0 --user=yc-managed-k8s-catlbe79o7tovp5cd5k0
-          kubectl config use-context yc-dipslab4
+          kubectl config set-cluster yc-cluster --server=${{ secrets.KUBE_SERVER }} --certificate-authority=ca.crt --embed-certs=true
+          kubectl config set-credentials yc-user --token=${{ secrets.KUBE_TOKEN }}
+          kubectl config set-context yc-context --cluster=yc-cluster --user=yc-user
+          kubectl config use-context yc-context
 
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/ --validate=false
+          kubectl apply -f k8s/
 
       - name: Verify deployment
         run: |
