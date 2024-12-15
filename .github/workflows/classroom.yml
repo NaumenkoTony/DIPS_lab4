@@ -52,6 +52,13 @@ jobs:
         run: |
           kubectl apply -f k8s/
 
+      - name: Restart Deployments
+        run: |
+          kubectl rollout restart deployment/gateway-service
+          kubectl rollout restart deployment/loyalty-service
+          kubectl rollout restart deployment/payment-service
+          kubectl rollout restart deployment/reservation-service
+
       - name: Verify deployment
         run: |
           kubectl get pods
